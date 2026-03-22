@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Голос, Робот!</string>
+    <string name="current_connection">Current connection</string>
+    <string name="my_robots">Мои роботы</string>
+</resources>

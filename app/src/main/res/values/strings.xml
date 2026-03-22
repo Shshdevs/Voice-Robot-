@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Voice, Robot!</string>
+    <string name="current_connection">Current connection</string>
+    <string name="my_robots">My robots</string>
+</resources>
