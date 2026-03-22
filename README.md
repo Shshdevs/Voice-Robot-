@@ -17,7 +17,7 @@ class HighCmdMapper : RobotCommand.CommandMapper<HighCmd> // Маппинг ко
 ```
 
 ```kotlin
-com.hotelka.voicerobot.data.remote.packer
+package com.hotelka.voicerobot.data.remote.packer
 object HighCmdPacker // Упаковщик UDP-пакета. Превращает HighCmd в данные ByteArray
 ```
 
