@@ -5,7 +5,7 @@ import com.hotelka.voicerobot.domain.repository.MicController
 import com.hotelka.voicerobot.presentation.controllers.MicManager
 import org.koin.dsl.module
 
-val singlesModule = module {
+val audioRecorderModule = module {
     single<MicController> { MicControllerImpl() }
-    single<MicManager> { MicManager(micController = get()) }
+    single{ MicManager(micController = get()) }
 }

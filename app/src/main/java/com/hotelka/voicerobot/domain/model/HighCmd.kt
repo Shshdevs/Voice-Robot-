@@ -28,7 +28,6 @@ data class HighCmd(
     val reserve: UInt = 0u,
     val crc: UInt = 0u,
 ) {
-
     init {
         require(head.size == 2) { "head must contain 2 bytes" }
         require(sn.size == 2) { "sn must contain 2 uints" }
@@ -38,6 +37,23 @@ data class HighCmd(
         require(velocity.size == 2) { "velocity must contain 2 floats" }
         require(led.size == 4) { "led must contain 4 colors" }
         require(wirelessRemote.size == 40) { "wirelessRemote must contain 40 bytes" }
+    }
+
+    fun initialized(
+        sequence: UInt = 0u,
+        version0: UInt = 0u,
+        version1: UInt = 0u,
+    ): HighCmd {
+        return copy(
+            head = ubyteArrayOf(0xFEu, 0xEFu),
+            levelFlag = 0x00u,   // high-level mode per docs
+            frameReserve = 0u,
+            sn = uintArrayOf(sequence, 0u),
+            version = uintArrayOf(version0, version1),
+            bandWidth = 0u,
+            reserve = 0u,
+            crc = 0u,
+        )
     }
 
     data class BmsCmd(
@@ -50,10 +66,14 @@ data class HighCmd(
 
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
-            if (other !is BmsCmd) return false
+            if (javaClass != other?.javaClass) return false
 
-            return off == other.off &&
-                    reserve.contentEquals(other.reserve)
+            other as BmsCmd
+
+            if (off != other.off) return false
+            if (!reserve.contentEquals(other.reserve)) return false
+
+            return true
         }
 
         override fun hashCode(): Int {
@@ -71,32 +91,39 @@ data class HighCmd(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is HighCmd) return false
+        if (javaClass != other?.javaClass) return false
 
-        return head.contentEquals(other.head) &&
-                levelFlag == other.levelFlag &&
-                frameReserve == other.frameReserve &&
-                sn.contentEquals(other.sn) &&
-                version.contentEquals(other.version) &&
-                bandWidth == other.bandWidth &&
-                mode == other.mode &&
-                gaitType == other.gaitType &&
-                speedLevel == other.speedLevel &&
-                footRaiseHeight == other.footRaiseHeight &&
-                bodyHeight == other.bodyHeight &&
-                position.contentEquals(other.position) &&
-                euler.contentEquals(other.euler) &&
-                velocity.contentEquals(other.velocity) &&
-                yawSpeed == other.yawSpeed &&
-                bms == other.bms &&
-                led == other.led &&
-                wirelessRemote.contentEquals(other.wirelessRemote) &&
-                reserve == other.reserve &&
-                crc == other.crc
+        other as HighCmd
+
+        if (footRaiseHeight != other.footRaiseHeight) return false
+        if (bodyHeight != other.bodyHeight) return false
+        if (yawSpeed != other.yawSpeed) return false
+        if (!head.contentEquals(other.head)) return false
+        if (levelFlag != other.levelFlag) return false
+        if (frameReserve != other.frameReserve) return false
+        if (!sn.contentEquals(other.sn)) return false
+        if (!version.contentEquals(other.version)) return false
+        if (bandWidth != other.bandWidth) return false
+        if (mode != other.mode) return false
+        if (gaitType != other.gaitType) return false
+        if (speedLevel != other.speedLevel) return false
+        if (!position.contentEquals(other.position)) return false
+        if (!euler.contentEquals(other.euler)) return false
+        if (!velocity.contentEquals(other.velocity)) return false
+        if (bms != other.bms) return false
+        if (led != other.led) return false
+        if (!wirelessRemote.contentEquals(other.wirelessRemote)) return false
+        if (reserve != other.reserve) return false
+        if (crc != other.crc) return false
+
+        return true
     }
 
     override fun hashCode(): Int {
-        var result = head.contentHashCode()
+        var result = footRaiseHeight.hashCode()
+        result = 31 * result + bodyHeight.hashCode()
+        result = 31 * result + yawSpeed.hashCode()
+        result = 31 * result + head.contentHashCode()
         result = 31 * result + levelFlag.hashCode()
         result = 31 * result + frameReserve.hashCode()
         result = 31 * result + sn.contentHashCode()
@@ -105,12 +132,9 @@ data class HighCmd(
         result = 31 * result + mode.hashCode()
         result = 31 * result + gaitType.hashCode()
         result = 31 * result + speedLevel.hashCode()
-        result = 31 * result + footRaiseHeight.hashCode()
-        result = 31 * result + bodyHeight.hashCode()
         result = 31 * result + position.contentHashCode()
         result = 31 * result + euler.contentHashCode()
         result = 31 * result + velocity.contentHashCode()
-        result = 31 * result + yawSpeed.hashCode()
         result = 31 * result + bms.hashCode()
         result = 31 * result + led.hashCode()
         result = 31 * result + wirelessRemote.contentHashCode()

@@ -4,6 +4,12 @@ import org.koin.dsl.module
 
 val appModule = module {
     includes(
-        singlesModule, viewModelModule
+        serializationModule,
+        protocolModule,
+        networkModule,
+        repositoryModule,
+        useCaseModule,
+        audioRecorderModule,
+        viewModelModule
     )
 }
