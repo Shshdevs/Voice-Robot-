@@ -12,26 +12,21 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.hotelka.voicerobot.presentation.events.HomeScreenEvents
 import com.hotelka.voicerobot.presentation.model.HomeScreenUiModel
 import com.hotelka.voicerobot.presentation.ui.content.headers.HomeTopBar
-import com.hotelka.voicerobot.presentation.ui.content.sheets.MyRobotsSheet
 import com.hotelka.voicerobot.presentation.ui.content.widgets.PulsatingButton
 import com.hotelka.voicerobot.presentation.ui.content.widgets.VoiceWaveform
 
@@ -73,8 +68,13 @@ fun HomeScreenContent(
 
                 Spacer(Modifier.height(25.dp))
                 Text(
-                    "Сидеть!",
+                    homeUiModel.command.let { command ->
+                        if (command.finalResult.text.isNotEmpty()) command.finalResult.text
+                        else if (command.finalResult.text.isNotEmpty()) command.recognitionResult.text
+                        else command.partialResult.partial
+                    }.replaceFirstChar { it.uppercase() },
                     fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
                     fontSize = 32.sp,
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -88,10 +88,10 @@ fun HomeScreenContent(
             }
             Spacer(Modifier.height(50.dp))
         }
-        MyRobotsSheet(
-            Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp),
-            isExpanded = homeUiModel.myRobotsExpanded,
-            onExpand = { onEvent(HomeScreenEvents.OnExpandMyRobots) })
+//        MyRobotsSheet(
+//            Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp),
+//            isExpanded = homeUiModel.myRobotsExpanded,
+//            onExpand = { onEvent(HomeScreenEvents.OnExpandMyRobots) })
     }
 }
 

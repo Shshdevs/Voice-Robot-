@@ -60,10 +60,10 @@ dependencies {
     implementation(libs.koin.core)
     implementation(libs.koin.compose)
     implementation(libs.koin.compose.viewmodel)
-
     implementation(libs.kotlinx.serialization.json)
 
-
+    //SpeechRecognition
+    implementation(libs.vosk.android)
     //Test dependencies
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -7,6 +7,7 @@ import com.hotelka.voicerobot.presentation.events.HomeScreenEvents
 import com.hotelka.voicerobot.presentation.model.HomeScreenUiModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -29,7 +30,9 @@ class HomeScreenViewModel(
                         micManager.stopListening()
                     } else {
                         micManager.startListening(viewModelScope)
-                        startCollectingBars()
+                        viewModelScope.launch {
+                            startCollectingBars()
+                        }
                     }
                     uiModel.copy(micIsOn = !uiModel.micIsOn)
                 }
@@ -37,12 +40,18 @@ class HomeScreenViewModel(
         }
     }
 
-    private fun startCollectingBars() {
-        viewModelScope.launch {
-            micManager.barHeights.collect { bars ->
-                _homeScreenUiModel.update { uiModel ->
-                    uiModel.copy(bars = bars)
-                }
+    private suspend fun startCollectingBars() {
+        combine(
+            micManager.commandRecognized,
+            micManager.barHeights
+        ) { command, barHeights ->
+            HomeScreenUiModel(command = command, bars = barHeights)
+        }.collect { newModel ->
+            _homeScreenUiModel.update { uiModel ->
+                uiModel.copy(
+                    command = newModel.command,
+                    bars = newModel.bars
+                )
             }
         }
     }

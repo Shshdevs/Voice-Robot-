@@ -13,6 +13,9 @@ activityCompose = "1.13.0"
 composeBom = "2026.03.00"
 navigationCompose = "2.9.2"
 truth = "1.4.5"
+voskAndroid = "0.3.75"
+voskApiKotlin = "0.4.0-alpha0"
+voskApiKotlinAndroid = "0.4.0-alpha0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,6 +40,9 @@ koin-compose = { module = "io.insert-koin:koin-compose" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel" }
 koin-core = { module = "io.insert-koin:koin-core" }
 truth = { module = "com.google.truth:truth", version.ref = "truth" }
+vosk-android = { module = "com.alphacephei:vosk-android", version.ref = "voskAndroid" }
+vosk-api-kotlin = { module = "com.alphacephei:vosk-api-kotlin", version.ref = "voskApiKotlin" }
+vosk-api-kotlin-android = { module = "com.alphacephei:vosk-api-kotlin-android", version.ref = "voskApiKotlinAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

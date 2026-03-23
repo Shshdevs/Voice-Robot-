@@ -10,7 +10,6 @@ import com.hotelka.voicerobot.domain.model.HighState
 import com.hotelka.voicerobot.domain.model.RobotCommand
 import com.hotelka.voicerobot.domain.model.RobotEndpoint
 import com.hotelka.voicerobot.domain.repository.RobotRepository
-import kotlinx.coroutines.delay
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
@@ -33,25 +32,25 @@ class RobotRepositoryImpl(
             val highCmd = highCmdMapper.map(command)
             val payload = HighCmdPacker.pack(highCmd)
 
-            if (endpoint.kind == RobotEndpoint.Kind.Mock) {
-                val rawResponse = dataSource
-                    .request(endpoint = endpoint, payload = payload)
-                    .getOrThrow()
-
-                return@runCatching parseResponse(rawResponse)
+            val rawResponse = when (endpoint.kind) {
+                RobotEndpoint.Kind.Mock -> {
+                    dataSource.request(
+                        endpoint = endpoint,
+                        payload = payload,
+                    ).getOrThrow()
+                }
+                RobotEndpoint.Kind.Real -> {
+                    dataSource.requestBurst(
+                        endpoint = endpoint,
+                        payload = payload,
+                        repeatCount = 20,
+                        intervalMs = 30L,
+                        localPort = 8090,
+                    ).getOrThrow()
+                }
             }
 
-            var lastState: HighState? = null
-            repeat(20) {
-                val rawResponse = dataSource
-                    .request(endpoint = endpoint, payload = payload)
-                    .getOrThrow()
-
-                lastState = parseResponse(rawResponse)
-                delay(20)
-            }
-
-            requireNotNull(lastState) { "Robot returned no state" }
+            parseResponse(rawResponse)
         }
     }
 

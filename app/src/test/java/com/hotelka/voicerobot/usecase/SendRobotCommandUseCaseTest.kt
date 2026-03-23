@@ -16,7 +16,7 @@ class SendRobotCommandUseCaseTest {
     @Test
     fun `invoke forwards command and endpoint to repository and returns success result`() =
         runTest {
-            val expectedCommand = RobotCommand.StandDown
+            val expectedCommand = RobotCommand.Walk(1f)
             val expectedEndpoint = RobotEndpoint(
                 host = "192.168.123.161",
                 port = 8082,
