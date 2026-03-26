@@ -2,19 +2,22 @@ package com.hotelka.voicerobot.data.remote.datasource
 
 import com.hotelka.voicerobot.domain.model.RobotEndpoint
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import java.io.Closeable
 import java.io.IOException
-import java.net.BindException
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.SocketTimeoutException
 
 class RobotUdpDataSourceImpl(
-    private val soTimeoutMs: Int = 150,
+    private val soTimeoutMs: Int = 300,
     private val receiveBufferSize: Int = 64 * 1024,
-) : RobotUdpDataSource {
+) : RobotUdpDataSource, Closeable {
+
+    private val socket = DatagramSocket().apply {
+        soTimeout = soTimeoutMs
+    }
 
     override suspend fun request(
         endpoint: RobotEndpoint,
@@ -23,97 +26,19 @@ class RobotUdpDataSourceImpl(
         runCatching {
             validate(endpoint, payload)
 
-            DatagramSocket().use { socket ->
-                socket.soTimeout = soTimeoutMs
-
-                val address = InetAddress.getByName(endpoint.host)
-                val requestPacket = DatagramPacket(
-                    payload,
-                    payload.size,
-                    address,
-                    endpoint.port,
-                )
-
-                socket.send(requestPacket)
-
-                receiveResponse(socket)
-            }
-        }.recoverCatching{ e -> return@withContext Result.failure(mapNetworkError(e))}
-    }
-
-    override suspend fun requestBurst(
-        endpoint: RobotEndpoint,
-        payload: ByteArray,
-        repeatCount: Int,
-        intervalMs: Long,
-        localPort: Int,
-    ): Result<ByteArray> = withContext(Dispatchers.IO) {
-        runCatching {
-            validate(endpoint, payload)
-            require(repeatCount > 0) { "repeatCount must be > 0" }
-            require(intervalMs >= 0) { "intervalMs must be >= 0" }
-            require(localPort in 1..65535) { "localPort must be in range 1..65535" }
-
             val address = InetAddress.getByName(endpoint.host)
+            val requestPacket = DatagramPacket(
+                payload,
+                payload.size,
+                address,
+                endpoint.port,
+            )
 
-            try {
-                DatagramSocket(localPort).use { socket ->
-                    socket.soTimeout = soTimeoutMs
-
-                    val requestPacket = DatagramPacket(
-                        payload,
-                        payload.size,
-                        address,
-                        endpoint.port,
-                    )
-
-                    repeat(repeatCount) { attempt ->
-                        socket.send(requestPacket)
-
-                        try {
-                            return@withContext Result.success(receiveResponse(socket))
-                        } catch (_: SocketTimeoutException) {
-                            if (attempt < repeatCount - 1 && intervalMs > 0) {
-                                delay(intervalMs)
-                            }
-                        }
-                    }
-
-                    throw IOException(
-                        "UDP timeout: no response from ${endpoint.host}:${endpoint.port} " +
-                                "after $repeatCount attempts from local port $localPort",
-                    )
-                }
-            } catch (e: BindException) {
-                DatagramSocket().use { socket ->
-                    socket.soTimeout = soTimeoutMs
-
-                    val requestPacket = DatagramPacket(
-                        payload,
-                        payload.size,
-                        address,
-                        endpoint.port,
-                    )
-
-                    repeat(repeatCount) { attempt ->
-                        socket.send(requestPacket)
-
-                        try {
-                            return@withContext Result.success(receiveResponse(socket))
-                        } catch (_: SocketTimeoutException) {
-                            if (attempt < repeatCount - 1 && intervalMs > 0) {
-                                delay(intervalMs)
-                            }
-                        }
-                    }
-
-                    throw IOException(
-                        "UDP timeout: no response from ${endpoint.host}:${endpoint.port} " +
-                                "after $repeatCount attempts",
-                    )
-                }
-            }
-        }.recoverCatching{ e -> return@withContext Result.failure(mapNetworkError(e))}
+            socket.send(requestPacket)
+            receiveResponse(socket)
+        }.recoverCatching { error ->
+            throw mapNetworkError(error)
+        }
     }
 
     private fun validate(endpoint: RobotEndpoint, payload: ByteArray) {
@@ -131,8 +56,12 @@ class RobotUdpDataSourceImpl(
 
     private fun mapNetworkError(error: Throwable): Throwable {
         return when (error) {
-            is SocketTimeoutException -> IOException("UDP timeout", error)
+            is SocketTimeoutException -> IOException("UDP timeout from robot/mock", error)
             else -> error
         }
+    }
+
+    override fun close() {
+        if (!socket.isClosed) socket.close()
     }
 }

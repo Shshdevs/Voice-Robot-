@@ -8,5 +8,5 @@ import com.hotelka.voicerobot.domain.repository.RobotRepository
 class SendRobotCommandUseCase(
     private val robotRepository: RobotRepository,
 ) {
-    suspend operator fun invoke(command: RobotCommand, endpoint: RobotEndpoint): Result<HighState> = robotRepository.sendCommand(command, endpoint)
+    suspend operator fun invoke(command: RobotCommand, endpoint: RobotEndpoint): Result<HighState> = robotRepository.exchange(command, endpoint)
 }

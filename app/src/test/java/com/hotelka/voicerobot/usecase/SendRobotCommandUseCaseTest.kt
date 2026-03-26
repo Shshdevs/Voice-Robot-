@@ -5,53 +5,26 @@ import com.hotelka.voicerobot.data.mapper.HighCmdMapper
 import com.hotelka.voicerobot.data.mapper.HighStateMockMapper
 import com.hotelka.voicerobot.data.remote.datasource.RobotUdpDataSourceImpl
 import com.hotelka.voicerobot.data.remote.parser.HighStateBinaryParser
+import com.hotelka.voicerobot.data.repository.RobotControlSessionImpl
 import com.hotelka.voicerobot.data.repository.RobotRepositoryImpl
 import com.hotelka.voicerobot.domain.model.RobotCommand
 import com.hotelka.voicerobot.domain.model.RobotEndpoint
-import com.hotelka.voicerobot.domain.usecase.SendRobotCommandUseCase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.junit.Test
 
 class SendRobotCommandUseCaseTest {
-    @Test
-    fun `invoke forwards command and endpoint to repository and returns success result`() =
-        runTest {
-            val expectedCommand = RobotCommand.Walk(1f)
-            val expectedEndpoint = RobotEndpoint(
-                host = "192.168.123.161",
-                port = 8082,
-                kind = RobotEndpoint.Kind.Real,
-            )
-
-            val repository = RobotRepositoryImpl(
-                dataSource = RobotUdpDataSourceImpl(),
-                highCmdMapper = HighCmdMapper(),
-                highStateMockMapper = HighStateMockMapper(),
-                highStateBinaryParser = HighStateBinaryParser(),
-            )
-
-            val useCase = SendRobotCommandUseCase(repository)
-
-            val result = useCase(
-                command = expectedCommand,
-                endpoint = expectedEndpoint,
-            )
-            print(result.exceptionOrNull())
-            print('\n')
-            print(result.getOrNull())
-            print('\n')
-            assertThat(result.isSuccess).isTrue()
-        }
 
     @Test
-    fun `invoke returns failure from repository`() = runTest {
-        val expectedCommand = RobotCommand.Walk(1f)
-        val expectedEndpoint = RobotEndpoint(
-            host = "127.0.0.1",
-            port = 8082,
-            kind = RobotEndpoint.Kind.Mock,
-        )
-
+    fun `mock exchange returns success and parsed state`() = runTest {
         val repository = RobotRepositoryImpl(
             dataSource = RobotUdpDataSourceImpl(),
             highCmdMapper = HighCmdMapper(),
@@ -59,14 +32,60 @@ class SendRobotCommandUseCaseTest {
             highStateBinaryParser = HighStateBinaryParser(),
         )
 
-        val useCase = SendRobotCommandUseCase(repository)
-
-        val result = useCase(
-            command = expectedCommand,
-            endpoint = expectedEndpoint,
+        val endpoint = RobotEndpoint(
+            host = "127.0.0.1",
+            port = 8082,
+            kind = RobotEndpoint.Kind.Mock,
         )
-        print(result.exceptionOrNull())
-        print(result.getOrNull()?.mode)
+
+        val result = repository.exchange(
+            command = RobotCommand.Walk(velocityX = 0.4f),
+            endpoint = endpoint,
+        )
+
         assertThat(result.isSuccess).isTrue()
+
+        val state = result.getOrNull()
+        assertThat(state).isNotNull()
+        assertThat(state!!.packetLength).isGreaterThan(0)
+        assertThat(state.receivedAtMs).isGreaterThan(0L)
+    }
+
+    @Test
+    fun `session publishes stream of states from mock`() = runBlocking {
+        val repository = RobotRepositoryImpl(
+            dataSource = RobotUdpDataSourceImpl(),
+            highCmdMapper = HighCmdMapper(),
+            highStateMockMapper = HighStateMockMapper(),
+            highStateBinaryParser = HighStateBinaryParser(),
+        )
+
+        val session = RobotControlSessionImpl(
+            robotRepository = repository,
+            loopDelayMs = 50L,
+            logger = ::println,
+        )
+
+        val endpoint = RobotEndpoint(
+            host = "192.168.123.161",
+            port = 8082,
+            kind = RobotEndpoint.Kind.Real,
+        )
+
+        session.start(this, endpoint)
+        session.updateCommand(RobotCommand.Walk(1.5f))
+
+        val states = withTimeout(5_000L) {
+            session.state
+                .filterNotNull()
+                .take(5)
+                .toList()
+        }
+
+        assertThat(states).hasSize(5)
+        assertThat(states.all { it.packetLength > 0 }).isTrue()
+        assertThat(states.all { it.receivedAtMs > 0L }).isTrue()
+
+        session.stop()
     }
 }

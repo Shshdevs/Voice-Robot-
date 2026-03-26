@@ -24,55 +24,44 @@ class RobotRepositoryImpl(
     },
 ) : RobotRepository {
 
-    override suspend fun sendCommand(
+    override suspend fun exchange(
         command: RobotCommand,
         endpoint: RobotEndpoint,
-    ): Result<HighState> {
-        return runCatching {
-            val highCmd = highCmdMapper.map(command)
-            val payload = HighCmdPacker.pack(highCmd)
+    ): Result<HighState> = runCatching {
+        val highCmd = highCmdMapper.map(command)
+        val payload = HighCmdPacker.pack(highCmd)
 
-            val rawResponse = when (endpoint.kind) {
-                RobotEndpoint.Kind.Mock -> {
-                    dataSource.request(
-                        endpoint = endpoint,
-                        payload = payload,
-                    ).getOrThrow()
-                }
-                RobotEndpoint.Kind.Real -> {
-                    dataSource.requestBurst(
-                        endpoint = endpoint,
-                        payload = payload,
-                        repeatCount = 20,
-                        intervalMs = 30L,
-                        localPort = 8090,
-                    ).getOrThrow()
-                }
-            }
+        val rawResponse = dataSource.request(
+            endpoint = endpoint,
+            payload = payload,
+        ).getOrThrow()
 
-            parseResponse(rawResponse)
+        when (endpoint.kind) {
+            RobotEndpoint.Kind.Mock -> parseMockJson(rawResponse)
+            RobotEndpoint.Kind.Real -> parseRealOrFallback(rawResponse)
         }
     }
 
-    private fun parseResponse(rawResponse: ByteArray): HighState {
-        if (rawResponse.isEmpty()) {
-            error("Robot response is empty")
-        }
+    private fun parseRealOrFallback(rawResponse: ByteArray): HighState {
+        if (rawResponse.isEmpty()) error("Robot response is empty")
 
-        return when {
-            looksLikeJson(rawResponse) -> parseMockJson(rawResponse)
-            else -> highStateBinaryParser.parse(rawResponse)
+        return if (looksLikeJson(rawResponse)) {
+            parseMockJson(rawResponse)
+        } else {
+            highStateBinaryParser.parse(rawResponse)
         }
     }
 
     private fun parseMockJson(rawResponse: ByteArray): HighState {
+        if (rawResponse.isEmpty()) error("Mock response is empty")
+
         val text = rawResponse.decodeToString()
 
         val dto = try {
             json.decodeFromString<HighStateMock>(text)
         } catch (e: SerializationException) {
             throw IllegalStateException(
-                "Failed to decode simulator response as HighStateMock JSON. Raw: $text",
+                "Failed to decode mock response as HighStateMock JSON. Raw: $text",
                 e,
             )
         }

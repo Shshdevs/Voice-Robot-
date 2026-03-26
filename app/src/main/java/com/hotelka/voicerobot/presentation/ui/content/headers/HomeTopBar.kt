@@ -51,7 +51,7 @@ fun HomeTopBar(currentConnection: String, onSettingsClick: () -> Unit) {
                 )
             }
         },
-        colors = TopAppBarDefaults.largeTopAppBarColors(
+        colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
             actionIconContentColor = MaterialTheme.colorScheme.onSurface

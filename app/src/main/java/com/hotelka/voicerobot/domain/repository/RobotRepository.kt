@@ -5,7 +5,8 @@ import com.hotelka.voicerobot.domain.model.RobotCommand
 import com.hotelka.voicerobot.domain.model.RobotEndpoint
 
 interface RobotRepository {
-    suspend fun sendCommand(
+
+    suspend fun exchange(
         command: RobotCommand,
         endpoint: RobotEndpoint,
     ): Result<HighState>
