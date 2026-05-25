@@ -64,7 +64,10 @@ class MicControllerImpl(
             val recognizer = Recognizer(
                 model,
                 sampleRate.toFloat(),
-                """["сидеть", "встать", "вперёд", "назад", "стоп"]"""
+                """
+                    ["сидеть", "встать", "вперёд", "назад", "стоп", 
+                    "молиться", "молится", "молись", "мольба", "моли"]"""
+                    .trimIndent()
             )
 
             val minBufferSize = AudioRecord.getMinBufferSize(

@@ -5,7 +5,6 @@ import org.koin.dsl.module
 val appModule = module {
     includes(
         serializationModule,
-        protocolModule,
         networkModule,
         repositoryModule,
         useCaseModule,

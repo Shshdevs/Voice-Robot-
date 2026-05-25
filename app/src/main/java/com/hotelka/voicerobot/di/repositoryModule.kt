@@ -7,11 +7,7 @@ import org.koin.dsl.module
 val repositoryModule = module {
     single<RobotRepository> {
         RobotRepositoryImpl(
-            dataSource = get(),
-            highCmdMapper = get(),
-            highStateMockMapper = get(),
-            highStateBinaryParser = get(),
-            json = get(),
+            dataSource = get()
         )
     }
 }

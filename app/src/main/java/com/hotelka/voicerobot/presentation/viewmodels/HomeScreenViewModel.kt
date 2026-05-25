@@ -2,7 +2,8 @@ package com.hotelka.voicerobot.presentation.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.hotelka.voicerobot.presentation.controllers.MicManager
+import com.hotelka.voicerobot.domain.repository.RobotRepository
+import com.hotelka.voicerobot.presentation.controllers.VoiceControlManager
 import com.hotelka.voicerobot.presentation.events.HomeScreenEvents
 import com.hotelka.voicerobot.presentation.model.HomeScreenUiModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,7 +13,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class HomeScreenViewModel(
-    private val micManager: MicManager
+    private val robotRepository: RobotRepository,
+    private val voiceControlManager: VoiceControlManager
 ) : ViewModel() {
     private val _homeScreenUiModel = MutableStateFlow(HomeScreenUiModel())
     val homeScreenUiModel = _homeScreenUiModel.asStateFlow()
@@ -27,9 +29,9 @@ class HomeScreenViewModel(
             HomeScreenEvents.OnStartStopMicEvent -> {
                 _homeScreenUiModel.update { uiModel ->
                     if (uiModel.micIsOn) {
-                        micManager.stopListening()
+                        voiceControlManager.stopListening()
                     } else {
-                        micManager.startListening(viewModelScope)
+                        voiceControlManager.startListening(viewModelScope)
                         viewModelScope.launch {
                             startCollectingBars()
                         }
@@ -42,11 +44,13 @@ class HomeScreenViewModel(
 
     private suspend fun startCollectingBars() {
         combine(
-            micManager.commandRecognized,
-            micManager.barHeights
+            voiceControlManager.commandRecognized,
+            voiceControlManager.barHeights
         ) { command, barHeights ->
             HomeScreenUiModel(command = command, bars = barHeights)
         }.collect { newModel ->
+            val command = newModel.command.let { it.partialResult.partial.ifBlank { it.finalResult.text.ifBlank { it.recognitionResult.text.ifBlank { null } } } }
+            if (newModel.command != _homeScreenUiModel.value.command && command != null) onCommandChange(command)
             _homeScreenUiModel.update { uiModel ->
                 uiModel.copy(
                     command = newModel.command,
@@ -56,4 +60,7 @@ class HomeScreenViewModel(
         }
     }
 
+    private suspend fun onCommandChange(command: String) {
+        robotRepository.sendCommand(command)
+    }
 }

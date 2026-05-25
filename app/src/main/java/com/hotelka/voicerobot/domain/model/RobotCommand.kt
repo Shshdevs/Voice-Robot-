@@ -3,12 +3,9 @@ package com.hotelka.voicerobot.domain.model
 sealed interface RobotCommand {
 
     data object Idle : RobotCommand
-    data object ForceStand : RobotCommand
-    data object StandDown : RobotCommand
-    data object StandUp : RobotCommand
-    data object Damping : RobotCommand
-    data object Recovery : RobotCommand
+    data object Praying: RobotCommand
 
+    data object LayDown: RobotCommand
     data class Walk(
         val velocityX: Float,
         val velocityY: Float = 0f,
@@ -33,5 +30,6 @@ sealed interface RobotCommand {
 
     interface CommandMapper<T> {
         fun map(command: RobotCommand): T
+        fun map(command: T): RobotCommand?
     }
 }
