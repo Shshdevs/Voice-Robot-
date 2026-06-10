@@ -16,12 +16,11 @@ import kotlinx.serialization.json.Json
 class Go1ApiDataSourceImpl(
     private val httpClient: HttpClient
 ) : Go1ApiDataSource {
-
     override suspend fun sendCommand(endpoint: String): Result<Unit> {
         return try {
             println("Sending command: $endpoint")
 
-            val response = httpClient.get("http://$ROBOT_ADDRESS:$ROBOT_PORT/$endpoint")
+            val response = httpClient.get("http://$ROBOT_ADDRESS:$ROBOT_PORT/$VOICE_API_PATH/$endpoint")
             println(response)
             if (response.status.isSuccess()) {
                 Result.success(Unit)
@@ -36,7 +35,8 @@ class Go1ApiDataSourceImpl(
     }
 
     companion object {
-        private const val ROBOT_ADDRESS = "192.168.123.51" //"192.168.123.161"
+        private const val VOICE_API_PATH = "voice"
+        private const val ROBOT_ADDRESS = "192.168.123.51" //192.168.0.23 – DEBUG/ 192.168.123.51 – Робот
         private const val ROBOT_PORT = "8082"
     }
 }

@@ -11,9 +11,7 @@ class RobotRepositoryImpl(
     private val dataSource: Go1ApiDataSource
 ) : RobotRepository {
     override suspend fun sendCommand(command: String): Result<Unit> {
-        Log.d("Command", command)
         val endpoint = robotCommandMapper.map(command)?.let { robotCommandMapper.map(it) }
-        Log.d("Command", endpoint.toString())
         return endpoint?.let { dataSource.sendCommand(it) } ?: Result.success(Unit)
     }
 }

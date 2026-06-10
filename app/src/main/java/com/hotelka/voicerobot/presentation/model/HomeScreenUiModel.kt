@@ -6,6 +6,6 @@ import com.hotelka.voicerobot.data.dto.SpeechRecognitionResult
 data class HomeScreenUiModel(
     val micIsOn: Boolean = false,
     val bars: List<Float> = List(24) { 0.08f },
-    val command: SpeechRecognitionResult = SpeechRecognitionResult(finalResult = FinalResult("Начните прослушивание")),
+    val command: String = "Начните прослушивание",
     val myRobotsExpanded: Boolean = false
 )

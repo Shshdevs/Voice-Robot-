@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -49,9 +50,10 @@ fun HomeScreenContent(
             Column(
                 Modifier
                     .weight(1f)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 PulsatingButton(
                     buttonSize = 120.dp,
@@ -66,16 +68,12 @@ fun HomeScreenContent(
                     }
                 )
 
-                Spacer(Modifier.height(25.dp))
+                Spacer(Modifier.height(15.dp))
                 Text(
-                    homeUiModel.command.let { command ->
-                        if (command.finalResult.text.isNotEmpty()) command.finalResult.text
-                        else if (command.finalResult.text.isNotEmpty()) command.recognitionResult.text
-                        else command.partialResult.partial
-                    }.replaceFirstChar { it.uppercase() },
+                    homeUiModel.command.replaceFirstChar { it.uppercase() },
                     fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center,
-                    fontSize = 32.sp,
+                    fontSize = 28.sp,
                     color = MaterialTheme.colorScheme.onBackground
                 )
 

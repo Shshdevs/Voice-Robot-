@@ -11,6 +11,4 @@ class VoiceControlManager(
     val barHeights = micController.barHeights
     fun startListening(scope: CoroutineScope): Result<Unit> = runCatching { micController.startListening(scope) }
     fun stopListening() { micController.stopListening() }
-
-
 }

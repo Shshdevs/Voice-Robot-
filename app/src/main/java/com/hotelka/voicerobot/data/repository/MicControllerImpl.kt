@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
-import android.util.Log
 import androidx.core.content.ContextCompat
 import com.hotelka.voicerobot.core.ContextHolder
 import com.hotelka.voicerobot.data.dto.FinalResult
@@ -33,6 +32,7 @@ import org.vosk.Recognizer
 import java.io.File
 import kotlin.math.abs
 import kotlin.math.sqrt
+import kotlin.time.Duration.Companion.milliseconds
 
 class MicControllerImpl(
     private val barCount: Int = 17,
@@ -49,7 +49,7 @@ class MicControllerImpl(
 
     private var audioRecord: AudioRecord? = null
     private var recordingJob: Job? = null
-    private val sampleRate = 44100
+    private val sampleRate = 16000
 
     override fun startListening(scope: CoroutineScope) {
         if (recordingJob?.isActive == true) return
@@ -64,10 +64,7 @@ class MicControllerImpl(
             val recognizer = Recognizer(
                 model,
                 sampleRate.toFloat(),
-                """
-                    ["сидеть", "встать", "вперёд", "назад", "стоп", 
-                    "молиться", "молится", "молись", "мольба", "моли"]"""
-                    .trimIndent()
+                GRAMMAR.trimIndent()
             )
 
             val minBufferSize = AudioRecord.getMinBufferSize(
@@ -78,7 +75,7 @@ class MicControllerImpl(
             val bufferSize = (minBufferSize * 2).coerceAtLeast(2048)
 
             val recorder = AudioRecord(
-                MediaRecorder.AudioSource.MIC,
+                MediaRecorder.AudioSource.VOICE_RECOGNITION,
                 sampleRate,
                 AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT,
@@ -123,7 +120,7 @@ class MicControllerImpl(
                         _barHeights.value = decayBars(_barHeights.value)
                     }
 
-                    delay(16)
+                    delay(16.milliseconds)
                 }
             } finally {
 //                recorder.stop()
@@ -143,6 +140,13 @@ class MicControllerImpl(
         _barHeights.value = List(barCount) { minBarHeight }
     }
 
+    private fun applyNoiseReduction(buffer: ShortArray): ShortArray {
+        val smoothed = ShortArray(buffer.size)
+        for (i in 1 until buffer.size - 1) {
+            smoothed[i] = ((buffer[i - 1].toInt() + buffer[i].toInt() + buffer[i + 1].toInt()) / 3).toShort()
+        }
+        return smoothed
+    }
     private fun calculateRms(buffer: ShortArray, size: Int): Float {
         var sum = 0.0
         for (i in 0 until size) {
@@ -174,7 +178,7 @@ class MicControllerImpl(
     private fun smoothTransition(
         old: List<Float>,
         new: List<Float>,
-        factor: Float = 0.25f
+        factor: Float = 0.25f,
     ): List<Float> {
         return old.zip(new) { previous, target ->
             previous + (target - previous) * factor
@@ -183,7 +187,7 @@ class MicControllerImpl(
 
     private fun decayBars(
         old: List<Float>,
-        factor: Float = 0.12f
+        factor: Float = 0.12f,
     ): List<Float> {
         return old.map { value ->
             val next = value - factor
@@ -201,7 +205,7 @@ class MicControllerImpl(
 
     private fun copyModelFromAssets(
         context: Context,
-        modelName: String = "vosk-model-small-ru-0.22"
+        modelName: String = "vosk-model-small-ru-0.22",
     ): Model {
         val assetManager = context.assets
         val outDir = File(context.filesDir, modelName)
@@ -229,5 +233,23 @@ class MicControllerImpl(
         copyAssetDir(modelName, outDir)
 
         return Model(outDir.absolutePath)
+    }
+
+    companion object {
+        private const val GRAMMAR = """
+            ["молись", "мольба",
+            "лежать", "ложись",
+            "бочка",
+            "танцуй", "танец",
+            "сердце", "сердечко", 
+            "влево", "налево",
+            "вправо", "направо",
+            "лапа", "лапу",
+            "упал", "заново",
+            "шоу", "представление",
+            "сидеть", "сядь",
+            "встань", "поднимись", "стоять",
+            "стоп", "остановись"]
+        """
     }
 }
